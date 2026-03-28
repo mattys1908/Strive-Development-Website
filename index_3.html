@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRIVE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --black:   #05080f;
+      --deep:    #080c18;
+      --dark:    #0d1224;
+      --panel:   #111827;
+      --ember:   #ff4d0d;
+      --ember2:  #ff7c38;
+      --gold:    #ffd93d;
+      --cyan:    #00e5ff;
+      --green:   #39ff14;
+      --smoke:   #4a5568;
+      --muted:   #8899aa;
+      --bone:    #c8bfb0;
+      --white:   #e8f0fe;
+      --px: 4px; /* pixel unit */
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 400;
+      overflow-x: hidden;
+      image-rendering: pixelated;
+    }
+
+    /* ── PIXEL CURSOR ── */
+    @media (pointer:fine) { body { cursor: none; } }
+    #cur {
+      position: fixed; width:12px; height:12px;
+      background: var(--ember);
+      box-shadow: 0 0 0 2px var(--black), 0 0 0 4px var(--ember), 0 0 12px var(--ember);
+      pointer-events: none; z-index:9999;
+      transform: translate(-50%,-50%);
+      image-rendering: pixelated;
+    }
+
+    /* ── CRT OVERLAY ── */
+    #crt {
+      position: fixed; inset:0; z-index:8000; pointer-events:none;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0,0,0,0.08) 2px,
+          rgba(0,0,0,0.08) 4px
+        );
+      animation: flicker 8s infinite;
+    }
+    @keyframes flicker {
+      0%,98%,100% { opacity:1; }
+      99% { opacity:0.92; }
+    }
+
+    /* ── PIXEL NOISE ── */
+    #noise {
+      position: fixed; inset:0; z-index:7999; pointer-events:none; opacity:0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ── NAV ── */
+    nav {
+      position:fixed; top:0; left:0; right:0; z-index:500;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 40px;
+      height:56px;
+      background: rgba(5,8,15,0.92);
+      border-bottom: 2px solid var(--ember);
+      box-shadow: 0 0 24px rgba(255,77,13,0.25), inset 0 -1px 0 rgba(255,77,13,0.1);
+    }
+    .nav-logo {
+      font-family: 'Press Start 2P', monospace;
+      font-size:14px; color:var(--ember);
+      text-decoration:none; letter-spacing:0.05em;
+      text-shadow: 2px 2px 0 #7a1800, 0 0 20px rgba(255,77,13,0.6);
+      image-rendering: pixelated;
+    }
+    .nav-links { display:flex; gap:32px; list-style:none; }
+    .nav-links a {
+      font-family:'Press Start 2P', monospace;
+      font-size:7px; letter-spacing:0.08em;
+      color: var(--muted); text-decoration:none;
+      transition: color 0.15s;
+      position:relative;
+    }
+    .nav-links a::after {
+      content:''; position:absolute; bottom:-4px; left:0; right:0;
+      height:2px; background:var(--ember);
+      transform:scaleX(0); transform-origin:left;
+      transition: transform 0.2s;
+    }
+    .nav-links a:hover { color:var(--ember); }
+    .nav-links a:hover::after { transform:scaleX(1); }
+
+    /* mobile toggle */
+    .nav-toggle {
+      display:none; flex-direction:column; gap:5px;
+      background:none; border:none; cursor:pointer; padding:4px;
+    }
+    .nav-toggle span {
+      display:block; width:22px; height:2px; background:var(--ember);
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .nav-toggle.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+    .nav-toggle.open span:nth-child(2) { opacity:0; }
+    .nav-toggle.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+    .nav-drawer {
+      display:none; position:fixed; inset:0;
+      background:rgba(5,8,15,0.98); z-index:490;
+      flex-direction:column; align-items:center; justify-content:center; gap:40px;
+      opacity:0; transition:opacity 0.3s;
+    }
+    .nav-drawer.open { opacity:1; }
+    .nav-drawer a {
+      font-family:'Press Start 2P', monospace; font-size:16px;
+      color:var(--white); text-decoration:none; transition:color 0.2s;
+    }
+    .nav-drawer a:hover { color:var(--ember); }
+
+    /* ── HERO ── */
+    .hero {
+      position:relative; min-height:100svh;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      text-align:center; overflow:hidden;
+      padding:100px 40px 80px;
+    }
+
+    /* Parallax layers */
+    .parallax-layer {
+      position:absolute; inset:0;
+      will-change:transform;
+    }
+
+    /* Stars layer */
+    #stars {
+      background:
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 8%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 30%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 75% 12%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 55%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 75%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 35% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(2px 2px at 70% 20%, rgba(255,77,13,0.4) 0%, transparent 100%),
+        radial-gradient(2px 2px at 20% 50%, rgba(0,229,255,0.3) 0%, transparent 100%),
+        radial-gradient(2px 2px at 55% 75%, rgba(255,77,13,0.3) 0%, transparent 100%);
+      background-color: var(--black);
+    }
+
+    /* Mountain silhouette layer */
+    #mountains {
+      background:
+        linear-gradient(to top, var(--black) 0%, transparent 40%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 400' preserveAspectRatio='none'%3E%3Cpolygon points='0,400 0,280 80,200 160,260 240,160 320,240 400,120 480,200 560,80 640,180 720,60 800,160 880,100 960,200 1040,140 1120,220 1200,100 1280,180 1360,240 1440,160 1440,400' fill='%230d1224'/%3E%3Cpolygon points='0,400 0,320 60,280 120,310 200,240 280,290 360,200 440,270 520,180 600,260 680,150 760,230 840,170 920,250 1000,190 1080,260 1160,200 1240,270 1320,230 1440,270 1440,400' fill='%23111827' opacity='0.8'/%3E%3C/svg%3E") no-repeat bottom / 100% auto;
+    }
+
+    /* Grid floor */
+    #grid-floor {
+      background:
+        linear-gradient(to top, rgba(255,77,13,0.12) 0%, transparent 35%),
+        linear-gradient(90deg, rgba(255,77,13,0.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255,77,13,0.06) 1px, transparent 1px);
+      background-size: auto, 40px 40px, 40px 40px;
+      background-position: bottom, bottom, bottom;
+      perspective: 300px;
+      mask-image: linear-gradient(to top, black 0%, black 30%, transparent 60%);
+    }
+
+    /* Glow orb */
+    #glow-orb {
+      position:absolute; inset:0;
+      background:
+        radial-gradient(ellipse 50% 40% at 50% 60%, rgba(255,77,13,0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 30% 20% at 50% 100%, rgba(255,77,13,0.25) 0%, transparent 60%);
+      pointer-events:none;
+    }
+
+    /* Pixel decorations */
+    .pixel-deco {
+      position:absolute;
+      image-rendering:pixelated;
+      pointer-events:none;
+    }
+
+    /* Hero content */
+    .hero-content { position:relative; z-index:10; }
+
+    .hero-eyebrow {
+      font-family:'Press Start 2P', monospace;
+      font-size:9px; letter-spacing:0.2em;
+      color:var(--cyan); margin-bottom:28px;
+      opacity:0; animation:pixelFadeIn 0.5s steps(4,end) 0.3s forwards;
+      text-shadow: 0 0 10px var(--cyan);
+    }
+
+    .hero-title {
+      font-family:'Press Start 2P', monospace;
+      font-size:clamp(40px,10vw,100px);
+      line-height:1.1; letter-spacing:0.06em;
+      color:var(--white);
+      opacity:0; animation:pixelFadeIn 0.6s steps(6,end) 0.6s forwards;
+      position:relative;
+      text-shadow:
+        4px 4px 0 var(--ember),
+        8px 8px 0 rgba(255,77,13,0.3),
+        0 0 40px rgba(255,77,13,0.4);
+    }
+
+    /* Glitch effect on title */
+    .hero-title::before, .hero-title::after {
+      content:'STRIVE';
+      position:absolute; inset:0;
+      opacity:0;
+    }
+    .hero-title::before {
+      color:var(--cyan);
+      animation:glitch1 6s infinite 2s;
+      clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%);
+    }
+    .hero-title::after {
+      color:var(--ember);
+      animation:glitch2 6s infinite 2.1s;
+      clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%);
+    }
+    @keyframes glitch1 {
+      0%,94%,100%{opacity:0;transform:translate(0)}
+      95%{opacity:0.8;transform:translate(-4px,0)}
+      96%{opacity:0.8;transform:translate(4px,0)}
+      97%{opacity:0;transform:translate(0)}
+    }
+    @keyframes glitch2 {
+      0%,94%,100%{opacity:0;transform:translate(0)}
+      95%{opacity:0.8;transform:translate(4px,-2px)}
+      96%{opacity:0.8;transform:translate(-4px,2px)}
+      97%{opacity:0;transform:translate(0)}
+    }
+
+    .hero-sub {
+      font-family:'VT323', monospace;
+      font-size:clamp(22px,3.5vw,36px);
+      color:var(--bone); margin-top:20px; letter-spacing:0.1em;
+      opacity:0; animation:pixelFadeIn 0.5s steps(4,end) 1s forwards;
+    }
+
+    .hero-cta {
+      margin-top:48px; display:flex; gap:20px; justify-content:center; flex-wrap:wrap;
+      opacity:0; animation:pixelFadeIn 0.5s steps(4,end) 1.3s forwards;
+    }
+
+    /* Pixel buttons */
+    .px-btn {
+      font-family:'Press Start 2P', monospace;
+      font-size:8px; letter-spacing:0.08em;
+      padding:14px 28px;
+      text-decoration:none; display:inline-block;
+      cursor:pointer; border:none;
+      position:relative;
+      transition:transform 0.1s steps(2,end), filter 0.15s;
+      image-rendering:pixelated;
+    }
+    .px-btn:active { transform:translate(2px,2px); }
+
+    .px-btn-primary {
+      background:var(--ember); color:var(--white);
+      box-shadow:
+        4px 0 0 0 #7a1800,
+        0 4px 0 0 #7a1800,
+        4px 4px 0 0 #7a1800,
+        inset -2px -2px 0 0 rgba(0,0,0,0.3);
+    }
+    .px-btn-primary:hover {
+      background:var(--ember2);
+      filter:brightness(1.1);
+      transform:translate(-1px,-1px);
+      box-shadow:
+        5px 0 0 0 #7a1800,
+        0 5px 0 0 #7a1800,
+        5px 5px 0 0 #7a1800,
+        inset -2px -2px 0 0 rgba(0,0,0,0.3);
+    }
+    .px-btn-outline {
+      background:transparent; color:var(--cyan);
+      border:2px solid var(--cyan);
+      box-shadow:
+        4px 0 0 0 rgba(0,229,255,0.3),
+        0 4px 0 0 rgba(0,229,255,0.3),
+        4px 4px 0 0 rgba(0,229,255,0.3),
+        0 0 20px rgba(0,229,255,0.15);
+    }
+    .px-btn-outline:hover {
+      background:rgba(0,229,255,0.1);
+      filter:brightness(1.15);
+      transform:translate(-1px,-1px);
+    }
+
+    .hero-scroll-hint {
+      position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
+      font-family:'Press Start 2P', monospace; font-size:7px;
+      color:var(--smoke); letter-spacing:0.1em;
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+      animation:bounceScroll 2s steps(4,end) infinite;
+      z-index:10;
+    }
+    .hero-scroll-hint::after {
+      content:'▼'; font-size:10px; color:var(--ember);
+    }
+    @keyframes bounceScroll {
+      0%,100%{transform:translateX(-50%) translateY(0)}
+      50%{transform:translateX(-50%) translateY(6px)}
+    }
+
+    /* ── PIXEL DIVIDER ── */
+    .px-divider {
+      height:8px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--ember) 0px, var(--ember) 8px,
+        transparent 8px, transparent 16px
+      );
+    }
+    .px-divider-cyan {
+      background: repeating-linear-gradient(
+        90deg,
+        var(--cyan) 0px, var(--cyan) 8px,
+        transparent 8px, transparent 16px
+      );
+      opacity:0.4;
+    }
+
+    /* ── SECTIONS ── */
+    section { padding:90px 48px; position:relative; }
+
+    .section-tag {
+      font-family:'Press Start 2P', monospace;
+      font-size:8px; letter-spacing:0.15em;
+      color:var(--ember); margin-bottom:24px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .section-tag::before {
+      content:'►'; font-size:8px;
+    }
+
+    /* ── ABOUT ── */
+    #about { background:var(--deep); }
+    .about-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:center;
+    }
+    .about-text h2 {
+      font-family:'Press Start 2P', monospace;
+      font-size:clamp(18px,3vw,32px); line-height:1.6;
+      letter-spacing:0.04em; margin-bottom:28px;
+      color:var(--white);
+    }
+    .about-text h2 span { color:var(--ember); }
+    .about-text p {
+      font-family:'VT323', monospace;
+      font-size:clamp(18px,2vw,22px); line-height:1.7;
+      color:var(--bone); margin-bottom:16px; letter-spacing:0.04em;
+    }
+    .genre-tags { display:flex; gap:8px; flex-wrap:wrap; margin-top:24px; }
+    .genre-tag {
+      font-family:'Press Start 2P', monospace; font-size:7px;
+      padding:6px 10px; border:2px solid var(--ember);
+      color:var(--ember); background:rgba(255,77,13,0.08);
+      letter-spacing:0.05em;
+    }
+
+    /* Pixel art game card */
+    .game-card {
+      position:relative; background:var(--panel);
+      border:4px solid var(--ember);
+      box-shadow:
+        8px 8px 0 rgba(255,77,13,0.3),
+        0 0 40px rgba(255,77,13,0.1),
+        inset 0 0 60px rgba(255,77,13,0.05);
+      padding:0; overflow:hidden;
+      aspect-ratio:4/3;
+    }
+    .game-card-screen {
+      width:100%; height:100%;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255,77,13,0.08) 0%, transparent 70%),
+        var(--dark);
+      display:flex; align-items:center; justify-content:center;
+      position:relative; overflow:hidden;
+    }
+    /* Pixel grid inside card */
+    .game-card-screen::before {
+      content:'';
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(90deg,rgba(255,77,13,0.04) 1px,transparent 1px),
+        linear-gradient(0deg,rgba(255,77,13,0.04) 1px,transparent 1px);
+      background-size:20px 20px;
+    }
+    .card-title-big {
+      font-family:'Press Start 2P', monospace;
+      font-size:clamp(28px,5vw,52px);
+      color:var(--ember); letter-spacing:0.08em;
+      text-shadow:
+        3px 3px 0 #7a1800,
+        0 0 30px rgba(255,77,13,0.5);
+      position:relative; z-index:1;
+      animation:cardPulse 3s steps(2,end) infinite;
+    }
+    @keyframes cardPulse {
+      0%,100%{text-shadow:3px 3px 0 #7a1800,0 0 30px rgba(255,77,13,0.5);}
+      50%{text-shadow:3px 3px 0 #7a1800,0 0 50px rgba(255,77,13,0.8);}
+    }
+    .card-badge {
+      position:absolute; top:12px; left:12px;
+      font-family:'Press Start 2P', monospace; font-size:6px;
+      padding:6px 8px; background:var(--ember); color:var(--white);
+      letter-spacing:0.1em;
+    }
+    .card-badge::before { content:'● '; color:var(--gold); animation:blink 1s steps(1,end) infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .card-scanlines {
+      position:absolute; inset:0; pointer-events:none;
+      background:repeating-linear-gradient(
+        0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px
+      );
+    }
+    /* Pixel corner decorations */
+    .px-corner {
+      position:absolute; width:16px; height:16px;
+      background:var(--ember);
+    }
+    .px-corner-tl { top:-4px; left:-4px; }
+    .px-corner-tr { top:-4px; right:-4px; }
+    .px-corner-bl { bottom:-4px; left:-4px; }
+    .px-corner-br { bottom:-4px; right:-4px; }
+
+    /* ── FEATURES ── */
+    #features { background:var(--dark); }
+    #features h2 {
+      font-family:'Press Start 2P', monospace;
+      font-size:clamp(14px,2.5vw,24px); line-height:1.6;
+      margin-bottom:48px; color:var(--white);
+    }
+    #features h2 span { color:var(--cyan); }
+
+    .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+    .feature-card {
+      background:var(--panel); padding:32px 28px;
+      border-left:4px solid transparent;
+      transition:border-color 0.15s steps(2,end), background 0.15s steps(2,end);
+      position:relative; overflow:hidden;
+      cursor:default;
+    }
+    .feature-card::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(135deg,rgba(255,77,13,0.05) 0%,transparent 60%);
+      opacity:0; transition:opacity 0.15s;
+    }
+    .feature-card:hover { border-color:var(--ember); background:#141b2d; }
+    .feature-card:hover::before { opacity:1; }
+
+    .feature-num {
+      font-family:'Press Start 2P', monospace; font-size:28px;
+      color:rgba(255,77,13,0.15); margin-bottom:16px; line-height:1;
+      transition:color 0.15s;
+    }
+    .feature-card:hover .feature-num { color:rgba(255,77,13,0.35); }
+    .feature-icon { font-size:24px; margin-bottom:12px; display:block; }
+    .feature-title {
+      font-family:'Press Start 2P', monospace; font-size:10px;
+      line-height:1.7; color:var(--white); margin-bottom:12px;
+    }
+    .feature-desc {
+      font-family:'VT323', monospace; font-size:18px;
+      line-height:1.6; color:var(--muted); letter-spacing:0.04em;
+    }
+
+    /* ── CREATORS ── */
+    #creators { background:var(--deep); }
+    #creators h2 {
+      font-family:'Press Start 2P', monospace;
+      font-size:clamp(14px,2.5vw,24px); line-height:1.6; margin-bottom:12px;
+    }
+    .creators-sub {
+      font-family:'VT323', monospace; font-size:20px;
+      color:var(--muted); margin-bottom:52px; letter-spacing:0.06em;
+    }
+    .creators-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:800px; }
+
+    .creator-card {
+      background:var(--panel);
+      border:2px solid rgba(255,77,13,0.2);
+      padding:32px; position:relative; overflow:hidden;
+      transition:border-color 0.15s steps(2,end);
+    }
+    .creator-card::after {
+      content:''; position:absolute;
+      top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,var(--ember),transparent);
+      transform:scaleX(0); transform-origin:left;
+      transition:transform 0.2s steps(4,end);
+    }
+    .creator-card:hover { border-color:var(--ember); }
+    .creator-card:hover::after { transform:scaleX(1); }
+
+    /* Pixel sprite avatar */
+    .sprite {
+      width:48px; height:48px; margin-bottom:20px;
+      image-rendering:pixelated;
+      position:relative;
+    }
+    .sprite-m, .sprite-v {
+      width:48px; height:48px;
+      display:grid; grid-template-columns:repeat(8,1fr);
+    }
+    /* Simple pixel character sprites drawn with box-shadows on a single div */
+    .sprite-pixel {
+      width:100%; height:100%;
+      position:relative;
+    }
+    /* We'll use CSS art for the sprites */
+    .avatar-box {
+      width:48px; height:48px;
+      background:var(--ember);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Press Start 2P', monospace; font-size:16px;
+      color:var(--white); letter-spacing:0;
+      image-rendering:pixelated;
+      box-shadow:3px 3px 0 #7a1800;
+      margin-bottom:20px;
+    }
+
+    .creator-name {
+      font-family:'Press Start 2P', monospace; font-size:14px;
+      letter-spacing:0.06em; margin-bottom:8px; color:var(--white);
+    }
+    .creator-role {
+      font-family:'Press Start 2P', monospace; font-size:7px;
+      letter-spacing:0.1em; color:var(--ember); margin-bottom:16px;
+    }
+    .creator-bio {
+      font-family:'VT323', monospace; font-size:18px;
+      line-height:1.6; color:var(--muted); letter-spacing:0.04em;
+    }
+
+    /* ── STEAM ── */
+    #steam { background:var(--dark); padding:100px 48px; }
+    .steam-inner { max-width:680px; margin:0 auto; text-align:center; }
+    .steam-inner .section-tag { justify-content:center; }
+    #steam h2 {
+      font-family:'Press Start 2P', monospace;
+      font-size:clamp(18px,3.5vw,36px); line-height:1.6;
+      margin-bottom:16px;
+    }
+    #steam h2 span { color:var(--ember); }
+    .steam-desc {
+      font-family:'VT323', monospace; font-size:22px;
+      color:var(--muted); margin-bottom:48px; line-height:1.6; letter-spacing:0.05em;
+    }
+
+    /* Steam card with pixel border */
+    .steam-card {
+      background:var(--panel);
+      border:4px solid var(--ember);
+      box-shadow:6px 6px 0 rgba(255,77,13,0.3), 0 0 40px rgba(255,77,13,0.1);
+      position:relative; text-align:left; overflow:hidden;
+    }
+
+    /* Animated pixel banner at top */
+    .steam-banner {
+      height:32px; overflow:hidden;
+      display:flex; align-items:center;
+      background:#0a0a14;
+      border-bottom:2px solid var(--ember);
+      position:relative;
+    }
+    .steam-banner-text {
+      font-family:'Press Start 2P', monospace; font-size:7px;
+      color:var(--ember); letter-spacing:0.15em; white-space:nowrap;
+      animation:marquee 12s linear infinite;
+      padding-right:80px;
+    }
+    @keyframes marquee {
+      0%{transform:translateX(0)}
+      100%{transform:translateX(-50%)}
+    }
+
+    .steam-body { padding:32px 36px 36px; }
+
+    .steam-game-row { display:flex; align-items:center; gap:20px; margin-bottom:28px; }
+    .steam-thumb {
+      width:100px; height:58px; flex-shrink:0;
+      background:var(--dark);
+      border:2px solid var(--ember);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Press Start 2P', monospace; font-size:11px;
+      color:var(--ember); letter-spacing:0.08em;
+      box-shadow:3px 3px 0 rgba(255,77,13,0.3);
+    }
+    .steam-game-title {
+      font-family:'Press Start 2P', monospace; font-size:16px;
+      color:var(--white); margin-bottom:8px; letter-spacing:0.05em;
+    }
+    .steam-tags { display:flex; gap:6px; flex-wrap:wrap; }
+    .steam-tag {
+      font-family:'Press Start 2P', monospace; font-size:6px;
+      padding:4px 8px; background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.1); color:var(--muted); letter-spacing:0.05em;
+    }
+
+    .steam-divider {
+      height:2px;
+      background:repeating-linear-gradient(
+        90deg, rgba(255,77,13,0.3) 0px, rgba(255,77,13,0.3) 4px, transparent 4px, transparent 8px
+      );
+      margin-bottom:28px;
+    }
+
+    /* Wishlist button with COMING SOON tape */
+    .wl-row { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+    .wl-wrap { position:relative; display:inline-flex; }
+    .wl-btn {
+      background:#1b2838; color:rgba(255,255,255,0.18);
+      font-family:'Press Start 2P', monospace; font-size:8px;
+      letter-spacing:0.1em; padding:14px 28px;
+      border:2px solid rgba(255,255,255,0.08);
+      cursor:not-allowed; display:flex; align-items:center; gap:10px;
+      box-shadow:3px 3px 0 rgba(0,0,0,0.4);
+    }
+    .wl-btn svg { opacity:0.2; flex-shrink:0; }
+
+    /* Diagonal tape */
+    .wl-tape {
+      position:absolute; inset:0; overflow:hidden; pointer-events:none;
+    }
+    .wl-tape::before {
+      content:'★ COMING SOON ★ COMING SOON ★ COMING SOON ★';
+      position:absolute; top:50%; left:-60px; right:-60px;
+      background:var(--ember);
+      color:var(--white);
+      font-family:'Press Start 2P', monospace;
+      font-size:6px; letter-spacing:0.15em;
+      padding:5px 0; text-align:center;
+      transform:translateY(-50%) rotate(-8deg);
+      white-space:nowrap; box-shadow:0 2px 0 #7a1800, 0 -2px 0 #7a1800;
+    }
+
+    .wl-status { flex:1; min-width:140px; }
+    .wl-status-title {
+      font-family:'Press Start 2P', monospace; font-size:9px;
+      color:var(--ember); margin-bottom:6px; letter-spacing:0.05em;
+    }
+    .wl-status-desc {
+      font-family:'VT323', monospace; font-size:17px;
+      color:var(--muted); line-height:1.5; letter-spacing:0.04em;
+    }
+
+    /* Notify block */
+    .steam-notify {
+      margin-top:24px; padding:16px 20px;
+      background:rgba(0,229,255,0.04);
+      border:2px solid rgba(0,229,255,0.2);
+      display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    }
+    .notify-icon {
+      font-family:'Press Start 2P', monospace; font-size:14px;
+      color:var(--cyan); flex-shrink:0;
+    }
+    .notify-text strong {
+      font-family:'Press Start 2P', monospace; font-size:7px;
+      color:var(--white); display:block; margin-bottom:4px; letter-spacing:0.05em;
+    }
+    .notify-text span {
+      font-family:'VT323', monospace; font-size:16px; color:var(--muted);
+    }
+
+    /* Bottom pixel border */
+    .steam-footer-bar {
+      height:8px;
+      background:repeating-linear-gradient(
+        90deg, var(--ember) 0px, var(--ember) 8px,
+        #1b2838 8px, #1b2838 16px
+      );
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background:var(--black);
+      border-top:4px solid var(--ember);
+      padding:36px 48px;
+      display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+    }
+    .footer-logo {
+      font-family:'Press Start 2P', monospace; font-size:14px;
+      color:var(--ember); letter-spacing:0.08em;
+      text-shadow:2px 2px 0 #7a1800;
+    }
+    .footer-copy {
+      font-family:'Press Start 2P', monospace; font-size:7px;
+      color:var(--smoke); letter-spacing:0.08em;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes pixelFadeIn {
+      from{opacity:0;filter:brightness(3)}
+      to{opacity:1;filter:brightness(1)}
+    }
+
+    .reveal {
+      opacity:0; transform:translateY(20px);
+      transition:opacity 0.5s steps(6,end), transform 0.5s steps(6,end);
+    }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:960px){
+      nav{padding:0 20px;}
+      .nav-links{display:none;}
+      .nav-toggle{display:flex;}
+      .hero{padding:80px 24px 72px;}
+      section{padding:64px 24px;}
+      #steam{padding:64px 24px;}
+      .about-grid{grid-template-columns:1fr;gap:40px;}
+      .features-grid{grid-template-columns:1fr;gap:4px;}
+      .creators-grid{grid-template-columns:1fr;max-width:100%;}
+      .steam-body{padding:24px 24px 28px;}
+      footer{padding:28px 24px;}
+    }
+    @media(max-width:600px){
+      .hero{padding:72px 20px 64px;}
+      .hero-cta{flex-direction:column;align-items:center;}
+      section{padding:52px 20px;}
+      #steam{padding:52px 20px;}
+      .steam-game-row{flex-direction:column;align-items:flex-start;}
+      .steam-thumb{width:100%;height:64px;}
+      .wl-row{flex-direction:column;align-items:flex-start;}
+      .wl-btn{width:100%;justify-content:center;}
+      .wl-wrap{width:100%;}
+      .steam-body{padding:20px 20px 24px;}
+      footer{flex-direction:column;text-align:center;padding:24px 20px;}
+    }
+    @media(max-width:380px){
+      .hero-title{font-size:32px;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cursor -->
+  <div id="cur"></div>
+
+  <!-- CRT + noise overlays -->
+  <div id="crt"></div>
+  <div id="noise"></div>
+
+  <!-- Mobile drawer -->
+  <div class="nav-drawer" id="navDrawer">
+    <a href="#about" onclick="closeDrawer()">ABOUT</a>
+    <a href="#features" onclick="closeDrawer()">FEATURES</a>
+    <a href="#creators" onclick="closeDrawer()">TEAM</a>
+    <a href="#steam" onclick="closeDrawer()">STEAM</a>
+  </div>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo">STRIVE</a>
+    <ul class="nav-links">
+      <li><a href="#about">ABOUT</a></li>
+      <li><a href="#features">FEATURES</a></li>
+      <li><a href="#creators">TEAM</a></li>
+      <li><a href="#steam">STEAM</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <!-- Parallax layers -->
+    <div class="parallax-layer" id="stars" data-speed="0.15"></div>
+    <div class="parallax-layer" id="mountains" data-speed="0.3"></div>
+    <div class="parallax-layer" id="grid-floor" data-speed="0.5"></div>
+    <div id="glow-orb"></div>
+
+    <div class="hero-content">
+      <p class="hero-eyebrow">▶ NOW IN DEVELOPMENT</p>
+      <h1 class="hero-title">STRIVE</h1>
+      <p class="hero-sub">Push further. Fall harder. Rise again.</p>
+      <div class="hero-cta">
+        <a href="#about" class="px-btn px-btn-primary">► EXPLORE</a>
+        <a href="#steam" class="px-btn px-btn-outline">♥ WISHLIST</a>
+      </div>
+    </div>
+
+    <div class="hero-scroll-hint">SCROLL</div>
+  </section>
+
+  <div class="px-divider"></div>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="about-grid">
+      <div class="about-text reveal">
+        <div class="section-tag">ABOUT THE GAME</div>
+        <h2>What does it mean<br>to <span>STRIVE</span>?</h2>
+        <p>An intense action game about persistence, growth, and the cost of pushing your limits. Set in a fractured world where strength is earned through struggle.</p>
+        <p>Every encounter tests not just your reflexes — but your resolve. Defeat is not the end. It is the beginning of something stronger.</p>
+        <div class="genre-tags">
+          <span class="genre-tag">ACTION</span>
+          <span class="genre-tag">ROGUELIKE</span>
+          <span class="genre-tag">COMBAT</span>
+          <span class="genre-tag">INDIE</span>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="game-card">
+          <div class="game-card-screen">
+            <div class="card-badge">IN DEV</div>
+            <div class="card-title-big">STRIVE</div>
+            <div class="card-scanlines"></div>
+          </div>
+          <div class="px-corner px-corner-tl"></div>
+          <div class="px-corner px-corner-tr"></div>
+          <div class="px-corner px-corner-bl"></div>
+          <div class="px-corner px-corner-br"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="px-divider px-divider-cyan"></div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="section-tag reveal">CORE PILLARS</div>
+    <h2 class="reveal">Built on <span>three truths</span></h2>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-num">01</div>
+        <span class="feature-icon">⚔</span>
+        <div class="feature-title">UNCOMPROMISING COMBAT</div>
+        <p class="feature-desc">Every fight is a conversation between intention and consequence. Learn enemy rhythms, exploit windows, and chain devastating combos.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-num">02</div>
+        <span class="feature-icon">🗺</span>
+        <div class="feature-title">A WORLD WORTH EXPLORING</div>
+        <p class="feature-desc">Fractured environments filled with hidden paths, cryptic lore, and encounters that shift depending on how you play.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-num">03</div>
+        <span class="feature-icon">💀</span>
+        <div class="feature-title">GROWTH THROUGH FAILURE</div>
+        <p class="feature-desc">Death carries meaning. Each run leaves traces — knowledge, scars, and power. Strive isn't about being good enough. It's about becoming better.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="px-divider"></div>
+
+  <!-- CREATORS -->
+  <section id="creators">
+    <div class="section-tag reveal">THE TEAM</div>
+    <h2 class="reveal" style="font-family:'Press Start 2P',monospace;font-size:clamp(14px,2.5vw,24px);line-height:1.6;margin-bottom:12px;">Made by two.</h2>
+    <p class="creators-sub reveal">An independent project. Two devs. One shared obsession.</p>
+    <div class="creators-grid">
+      <div class="creator-card reveal">
+        <div class="avatar-box">M</div>
+        <div class="creator-name">MATTHEW</div>
+        <div class="creator-role">DEVELOPER &amp; DESIGNER</div>
+        <p class="creator-bio">Driven by tight systems and clean code. Handles architecture, gameplay mechanics, and the endless loop of "just one more tweak."</p>
+      </div>
+      <div class="creator-card reveal">
+        <div class="avatar-box">V</div>
+        <div class="creator-name">VILJOEN</div>
+        <div class="creator-role">DEVELOPER &amp; CREATIVE</div>
+        <p class="creator-bio">The creative spark behind Strive's world and feel. Brings ideas to life with an eye for atmosphere, pacing, and moments that stick.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="px-divider px-divider-cyan"></div>
+
+  <!-- STEAM -->
+  <section id="steam">
+    <div class="steam-inner">
+      <div class="section-tag reveal">STEAM</div>
+      <h2 class="reveal">Coming to <span>Steam</span></h2>
+      <p class="steam-desc reveal">Wishlisting helps indie games more than you know. It keeps the fire burning and puts Strive in front of more players on launch day.</p>
+
+      <div class="steam-card reveal">
+        <!-- Scrolling marquee banner -->
+        <div class="steam-banner">
+          <div class="steam-banner-text">
+            ★ STRIVE &nbsp;·&nbsp; COMING TO STEAM &nbsp;·&nbsp; ACTION ROGUELIKE &nbsp;·&nbsp; INDIE &nbsp;·&nbsp; IN DEVELOPMENT &nbsp;·&nbsp; WISHLIST SOON &nbsp;·&nbsp; STRIVE &nbsp;·&nbsp; COMING TO STEAM &nbsp;·&nbsp; ACTION ROGUELIKE &nbsp;·&nbsp; INDIE &nbsp;·&nbsp; IN DEVELOPMENT &nbsp;·&nbsp; WISHLIST SOON &nbsp;·&nbsp;
+          </div>
+        </div>
+
+        <div class="steam-body">
+          <div class="steam-game-row">
+            <div class="steam-thumb">STRIVE</div>
+            <div>
+              <div class="steam-game-title">STRIVE</div>
+              <div class="steam-tags">
+                <span class="steam-tag">ACTION</span>
+                <span class="steam-tag">INDIE</span>
+                <span class="steam-tag">ROGUELIKE</span>
+                <span class="steam-tag">IN DEV</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="steam-divider"></div>
+
+          <div class="wl-row">
+            <div class="wl-wrap">
+              <button class="wl-btn" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                ADD TO WISHLIST
+              </button>
+              <div class="wl-tape"></div>
+            </div>
+
+            <div class="wl-status">
+              <div class="wl-status-title">PAGE NOT LIVE</div>
+              <div class="wl-status-desc">Steam store page coming soon. We'll update when it's live.</div>
+            </div>
+          </div>
+
+          <div class="steam-notify">
+            <div class="notify-icon">🔔</div>
+            <div class="notify-text">
+              <strong>STAY IN THE LOOP</strong>
+              <span>Follow our dev updates while the Steam page is being set up.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="steam-footer-bar"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">STRIVE</div>
+    <div class="footer-copy">© 2026 STRIVE DEVELOPMENT</div>
+  </footer>
+
+  <script>
+    // ── Pixel cursor ──
+    const cur = document.getElementById('cur');
+    let mx=0,my=0,rx=0,ry=0;
+    if(window.matchMedia('(pointer:fine)').matches){
+      document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+      (function tick(){
+        rx+=(mx-rx)*0.14; ry+=(my-ry)*0.14;
+        // snap to 2px grid for pixel feel
+        cur.style.left=Math.round(rx/2)*2+'px';
+        cur.style.top=Math.round(ry/2)*2+'px';
+        requestAnimationFrame(tick);
+      })();
+    }
+
+    // ── Parallax ──
+    const layers = document.querySelectorAll('.parallax-layer[data-speed]');
+    let ticking=false;
+    window.addEventListener('scroll',()=>{
+      if(!ticking){
+        requestAnimationFrame(()=>{
+          const sy=window.scrollY;
+          layers.forEach(l=>{
+            const speed=parseFloat(l.dataset.speed);
+            l.style.transform=`translateY(${sy*speed}px)`;
+          });
+          ticking=false;
+        });
+        ticking=true;
+      }
+    },{passive:true});
+
+    // ── Scroll reveal ──
+    const obs=new IntersectionObserver((entries)=>{
+      entries.forEach((entry,i)=>{
+        if(entry.isIntersecting){
+          setTimeout(()=>entry.target.classList.add('visible'),i*60);
+          obs.unobserve(entry.target);
+        }
+      });
+    },{threshold:0.08});
+    document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+    // ── Nav scroll ──
+    window.addEventListener('scroll',()=>{
+      document.getElementById('navbar').style.boxShadow=
+        window.scrollY>40?'0 4px 0 var(--ember), 0 0 40px rgba(255,77,13,0.3)':'';
+    },{passive:true});
+
+    // ── Mobile nav ──
+    const toggle=document.getElementById('navToggle');
+    const drawer=document.getElementById('navDrawer');
+    toggle.addEventListener('click',()=>{
+      const open=toggle.classList.toggle('open');
+      drawer.style.display=open?'flex':'none';
+      requestAnimationFrame(()=>drawer.classList.toggle('open',open));
+    });
+    function closeDrawer(){
+      toggle.classList.remove('open');
+      drawer.classList.remove('open');
+      setTimeout(()=>{drawer.style.display='none';},300);
+    }
+
+    // ── Random pixel sparkles on hero ──
+    const hero=document.getElementById('hero');
+    function spawnSparkle(){
+      if(!hero)return;
+      const s=document.createElement('div');
+      const size=Math.random()>0.7?4:2;
+      s.style.cssText=`
+        position:absolute;
+        width:${size}px;height:${size}px;
+        background:${Math.random()>0.6?'var(--ember)':'var(--cyan)'};
+        left:${Math.random()*100}%;
+        top:${20+Math.random()*70}%;
+        opacity:${0.4+Math.random()*0.6};
+        pointer-events:none;
+        z-index:5;
+        image-rendering:pixelated;
+        animation:sparkle ${0.8+Math.random()*1.2}s steps(4,end) forwards;
+      `;
+      hero.appendChild(s);
+      setTimeout(()=>s.remove(),2000);
+    }
+    const sparkleStyle=document.createElement('style');
+    sparkleStyle.textContent=`
+      @keyframes sparkle{
+        0%{opacity:1;transform:translateY(0) scale(1)}
+        50%{opacity:0.8;transform:translateY(-8px) scale(1.5)}
+        100%{opacity:0;transform:translateY(-16px) scale(0.5)}
+      }
+    `;
+    document.head.appendChild(sparkleStyle);
+    setInterval(spawnSparkle,300);
+  </script>
+</body>
+</html>
